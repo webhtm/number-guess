@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Guessing Game</title>
+    <style>
+        body {
+            font-family: Heebo;
+            background-color: rgb(0, 0, 0);
+            color: rgb(255, 255, 255);
+            text-align: center;
+            margin-top: 50px;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #00a2ff;
+        }
+        button {
+            background-color: #333;
+            color: rgba(5, 232, 244, 0.862);
+            border: none;
+            border-radius:5px;
+            padding: 10px;
+            margin: 10px;
+            font-family: Heebo;
+        }
+        button:hover {
+            background-color: rgb(72, 72, 72);
+            cursor: pointer;
+        }
+        input {
+            font-family: Heebo;
+            background-color: black;
+            color: rgb(54, 196, 203);
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+
+        }
+        input:hover {
+            border: 1px solid rgb(54, 196, 203);
+        }
+    </style>
+</head>
+<body>
+    <h1>Number Guessing Game</h1>
+    <p>Guess the number between 1 and 10</p>
+    <p id="inda">In ?Chances</p>
+    <input type="number" id="guessInput" placeholder="Enter your guess">
+    <button onclick="checkGuess()">Submit Guess</button>
+    <div id="result" value="STARTING"></div>
+    
+    <script>
+        const randomNumber = Math.floor(Math.random() * 10) + 1;
+        let attempts = 0;
+        var chances = prompt("Chances: ")
+        if (chances > 5) {
+            alert("You can't have more than 5 chances")
+            chances = 5
+        }
+        if (isNaN(chances) == true) {
+            chances = 5
+        }
+        if (chances == null) {
+            chances = 3
+        }
+        
+        inda.innerText = `You Have ${chances} Chances`
+        function checkGuess() {
+            const userGuess = parseInt(document.getElementById('guessInput').value);
+            attempts++;
+            if (parseInt(chances) == 1) {
+                alert("Chances Over!")
+                location.reload()
+            }
+            
+            if (isNaN(userGuess) || userGuess < 1 || userGuess > 10) {
+                document.getElementById('result').textContent = "Please enter a valid number between 1 and 10.";
+                return;
+            }
+            
+            if (userGuess === randomNumber) {
+                document.getElementById('result').value = "";
+                alert("You Won. Nice!")
+                location.reload()   
+                document.getElementById('guessInput').disabled = false;
+            } else if (userGuess > randomNumber) {
+                document.getElementById('result').textContent = "Too high! Try again.";
+                chances = parseInt(chances) - 1
+                inda.innerText = `You Have ${chances} Chances`
+                if (isNaN(chances) == true) {
+                location.reload()
+            }
+                
+            } else {
+                document.getElementById('result').textContent = "Too low! Try again.";
+                chances = parseInt(chances) - 1
+                inda.innerText = `You Have ${chances} Chances`
+                if (isNaN(chances) == true) {
+                location.reload()
+            }
+            }
+            
+            document.getElementById('guessInput').value = '';
+        }
+    </script>
+</body>
+</html>
