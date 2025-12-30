@@ -1,111 +1,592 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Number Guessing Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Number Guess</title>
     <style>
-        body {
-            font-family: Heebo;
-            background-color: rgb(0, 0, 0);
-            color: rgb(255, 255, 255);
-            text-align: center;
-            margin-top: 50px;
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-color: #16213e;
+            --accent-color: #0f3470;
+            --text-color: #4375e9;
+            --text-light: #ffffff;
+            --btn-color: #2a2a40;
+            --btn-active: #4a4a60;
+            --success: #4caf50;
+            --error: #f44336;
+            --warning: #ff9800;
         }
-        #result {
-            margin-top: 20px;
-            font-size: 1.2em;
-            color: #00a2ff;
-        }
-        button {
-            background-color: #333;
-            color: rgba(5, 232, 244, 0.862);
-            border: none;
-            border-radius:5px;
-            padding: 10px;
-            margin: 10px;
-            font-family: Heebo;
-        }
-        button:hover {
-            background-color: rgb(72, 72, 72);
-            cursor: pointer;
-        }
-        input {
-            font-family: Heebo;
-            background-color: black;
-            color: rgb(54, 196, 203);
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 5px;
 
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        input:hover {
-            border: 1px solid rgb(54, 196, 203);
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: trebuchet ms;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
         }
+        button {font-family:trebuchet ms;}
+
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2 { margin: 0 0 15px 0; text-align: center; color: var(--text-color); }
+        p { margin: 5px 0; color: #a0a0a0; }
+
+        /* --- Score Board --- */
+        .score-board {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .score-pill {
+            padding: 5px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .pill-win { background-color: var(--success); color: white; }
+        .pill-loss { background-color: var(--error); color: white; }
+
+        /* --- Modal Styling --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s; }
+
+        .modal-content {
+            background: var(--panel-color);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            width: 85%;
+            max-width: 320px;
+            border: 3px solid transparent; /* Set via JS class */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: border-color 0.3s;
+        }
+
+        .modal-title { font-size: 2rem; margin-bottom: 10px; font-weight: 800; }
+        .modal-text { font-size: 1.2rem; color: #fff; margin-bottom: 25px; }
+        .highlight-num { color: var(--text-color); font-weight: bold; font-size: 1.4rem; }
+
+        /* Modal Themes */
+        .modal-content.theme-win { border-color: var(--success); }
+        .modal-content.theme-win .modal-title { color: var(--success); }
+        
+        .modal-content.theme-loss { border-color: var(--error); }
+        .modal-content.theme-loss .modal-title { color: var(--error); }
+
+        .modal-btn {
+            width: 100%;
+            padding: 15px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .modal-btn:active { transform: scale(0.96); }
+        
+        .btn-restart { background: var(--text-color); color: white; }
+        .btn-menu { background: var(--btn-color); color: #ccc; }
+
+        /* --- Menu Styling --- */
+        .menu-group {
+            width: 100%;
+            background: var(--panel-color);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        label { display: block; margin-bottom: 10px; font-size: 1.1rem; }
+
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: var(--btn-color);
+            outline: none;
+            margin-bottom: 5px;
+        }
+
+        .range-value {
+            text-align: right;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .start-btn {
+            background-color: var(--text-color);
+            color: white;
+            border:none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 19px #333;
+            transition: ease 0.3s;
+        }
+        .start-btn:hover {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border:none;
+            transition: 0.3s ease;
+        }
+        .start-btn:active { transform: scale(0.95); }
+
+        /* --- Game Styling --- */
+        .game-header {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .hint-text {
+            height: 30px;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #ccc;
+            text-align: center;
+        }
+
+        .input-display {
+            background: var(--panel-color);
+            border: 2px solid var(--accent-color);
+            border-radius: 12px;
+            width: 100%;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-family: monospace;
+            letter-spacing: 5px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            transition: border-color 0.2s;
+        }
+
+        .input-display.shake {
+            animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        .input-display.error-border { border-color: var(--error); }
+        .input-display.win { border-color: var(--success); color: var(--success); }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 10px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        /* --- Keypad --- */
+        .keypad {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-bottom: 20px;
+        }
+
+        .key {
+            background: var(--btn-color);
+            border-radius: 12px;
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+            transition: transform 0.1s, background-color 0.1s;
+        }
+
+        .key:active {
+            transform: translateY(4px);
+            box-shadow: none;
+            background-color: var(--btn-active);
+        }
+
+        .key-action { background-color: var(--accent-color); }
+        .key-enter { background-color: var(--text-color); color: white; }
+
+        .icon { width: 28px; height: 28px; fill: currentColor; }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: ease 0.3s;
+        }
+        .back-btn:hover {
+            color:lightblue;
+            transition:ease 0.3s;
+        }
+
     </style>
 </head>
 <body>
-    <h1>Number Guessing Game</h1>
-    <p>Guess the number between 1 and 10</p>
-    <p id="inda">In ?Chances</p>
-    <input type="number" id="guessInput" placeholder="Enter your guess">
-    <button onclick="checkGuess()">Submit Guess</button>
-    <div id="result" value="STARTING"></div>
+
+<div class="app-container">
     
-    <script>
-        const randomNumber = Math.floor(Math.random() * 10) + 1;
-        let attempts = 0;
-        var chances = prompt("Chances: ")
-        if (chances > 5) {
-            alert("You can't have more than 5 chances")
-            chances = 5
-        }
-        if (isNaN(chances) == true) {
-            chances = 5
-        }
-        if (chances == null) {
-            chances = 3
+    <div class="score-board">
+        <div class="score-pill pill-win">
+            Wins: <span id="winCount">0</span>
+        </div>
+        <div class="score-pill pill-loss">
+            Loss: <span id="lossCount">0</span>
+        </div>
+    </div>
+
+    <div id="menuScreen" class="screen active">
+        <h1>Number Guess</h1>
+        
+        <div class="menu-group">
+            <label>Max Number</label>
+            <input type="range" id="maxNumInput" min="10" max="50" value="20" oninput="updateLabels()">
+            <div class="range-value"><span id="maxNumLabel">20</span></div>
+            <p style="text-align: right; font-size: 0.8rem;">Range: 1 to <span id="rangeEnd">20</span></p>
+        </div>
+
+        <div class="menu-group">
+            <label>Chances</label>
+            <input type="range" id="chancesInput" min="1" max="5" value="3" oninput="updateLabels()">
+            <div class="range-value"><span id="chancesLabel">3</span></div>
+        </div>
+
+        <button class="start-btn" onclick="startGame()">Play</button>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <button class="back-btn" onclick="goToMenu()">Exit</button>
+
+        <div class="game-header">
+            <div id="hintText" class="hint-text">Guess the number!</div>
+            
+            <div class="info-row">
+                <span id="rangeDisplay">1 - 20</span>
+                <span>Chances: <span id="livesDisplay" style="color: var(--text-color)">3</span></span>
+            </div>
+
+            <div id="inputDisplay" class="input-display"></div>
+        </div>
+
+        <div class="keypad">
+            <div class="key" onclick="pressKey('1')">1</div>
+            <div class="key" onclick="pressKey('2')">2</div>
+            <div class="key" onclick="pressKey('3')">3</div>
+            <div class="key" onclick="pressKey('4')">4</div>
+            <div class="key" onclick="pressKey('5')">5</div>
+            <div class="key" onclick="pressKey('6')">6</div>
+            <div class="key" onclick="pressKey('7')">7</div>
+            <div class="key" onclick="pressKey('8')">8</div>
+            <div class="key" onclick="pressKey('9')">9</div>
+            
+            <div class="key key-action" onclick="pressBackspace()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M22 3H7c-.69 0-1.23.35-1.59.88L0 12l5.41 8.11c.36.53.9.89 1.59.89h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-3 12.59L17.59 17 14 13.41 10.41 17 9 15.59 12.59 12 9 8.41 10.41 7 14 10.59 17.59 7 19 8.41 15.41 12 19 15.59z"/></svg>
+            </div>
+            
+            <div class="key" onclick="pressKey('0')">0</div>
+            
+            <div class="key key-enter" onclick="submitGuess()">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 7v4H5.83l3.58-3.59L8 6l-6 6 6 6 1.41-1.41L5.83 13H21V7z" transform="scale(-1,1) translate(-24,0)"/></svg>
+            </div>
+        </div>
+    </div>
+    
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-title" id="modalTitle">Result</div>
+            <p class="modal-text">The number was<br><span id="targetReveal" class="highlight-num">0</span></p>
+            
+            <button class="modal-btn btn-restart" onclick="retryGame()">Play Again</button>
+            <button class="modal-btn btn-menu" onclick="exitToMenu()">Main Menu</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- State ---
+    let config = { maxNum: 10, chances: 5 };
+    let state = {
+        target: 0,
+        currentGuess: "",
+        livesLeft: 0,
+        wins: 0,
+        losses: 0,
+        isGameOver: false
+    };
+
+    // --- DOM Elements ---
+    const els = {
+        menuScreen: document.getElementById('menuScreen'),
+        gameScreen: document.getElementById('gameScreen'),
+        resultModal: document.getElementById('resultModal'),
+        modalContent: document.getElementById('modalContent'),
+        modalTitle: document.getElementById('modalTitle'),
+        targetReveal: document.getElementById('targetReveal'),
+        
+        maxNumInput: document.getElementById('maxNumInput'),
+        chancesInput: document.getElementById('chancesInput'),
+        maxNumLabel: document.getElementById('maxNumLabel'),
+        rangeEnd: document.getElementById('rangeEnd'),
+        chancesLabel: document.getElementById('chancesLabel'),
+        inputDisplay: document.getElementById('inputDisplay'),
+        hintText: document.getElementById('hintText'),
+        livesDisplay: document.getElementById('livesDisplay'),
+        rangeDisplay: document.getElementById('rangeDisplay'),
+        winCount: document.getElementById('winCount'),
+        lossCount: document.getElementById('lossCount')
+    };
+
+    // --- Core Functions ---
+    function updateLabels() {
+        els.maxNumLabel.innerText = els.maxNumInput.value;
+        els.rangeEnd.innerText = els.maxNumInput.value;
+        els.chancesLabel.innerText = els.chancesInput.value;
+    }
+
+    function goToMenu() {
+        els.gameScreen.classList.remove('active');
+        els.menuScreen.classList.add('active');
+        els.resultModal.classList.remove('active');
+    }
+
+    function startGame() {
+        config.maxNum = parseInt(els.maxNumInput.value);
+        config.chances = parseInt(els.chancesInput.value);
+
+        state.target = Math.floor(Math.random() * config.maxNum) + 1;
+        state.livesLeft = config.chances;
+        state.currentGuess = "";
+        state.isGameOver = false;
+
+        // Reset UI
+        els.inputDisplay.innerText = "";
+        els.inputDisplay.classList.remove('win', 'shake', 'error-border');
+        els.hintText.innerText = "Enter your guess";
+        els.hintText.style.color = "#ccc";
+        els.livesDisplay.innerText = state.livesLeft;
+        els.rangeDisplay.innerText = `1 - ${config.maxNum}`;
+        els.resultModal.classList.remove('active');
+
+        els.menuScreen.classList.remove('active');
+        els.gameScreen.classList.add('active');
+        
+        
+    }
+    
+    // --- Modal Functions ---
+    function showModal(isWin) {
+        els.targetReveal.innerText = state.target;
+        
+        if (isWin) {
+            els.modalTitle.innerText = "You win!";
+            els.modalContent.classList.remove('theme-loss');
+            els.modalContent.classList.add('theme-win');
+        } else {
+            els.modalTitle.innerText = "You lose.";
+            els.modalContent.classList.remove('theme-win');
+            els.modalContent.classList.add('theme-loss');
         }
         
-        inda.innerText = `You Have ${chances} Chances`
-        function checkGuess() {
-            const userGuess = parseInt(document.getElementById('guessInput').value);
-            attempts++;
-            if (parseInt(chances) == 1) {
-                alert("Chances Over!")
-                location.reload()
-            }
-            
-            if (isNaN(userGuess) || userGuess < 1 || userGuess > 10) {
-                document.getElementById('result').textContent = "Please enter a valid number between 1 and 10.";
-                return;
-            }
-            
-            if (userGuess === randomNumber) {
-                document.getElementById('result').value = "";
-                alert("You Won. Nice!")
-                location.reload()   
-                document.getElementById('guessInput').disabled = false;
-            } else if (userGuess > randomNumber) {
-                document.getElementById('result').textContent = "Too high! Try again.";
-                chances = parseInt(chances) - 1
-                inda.innerText = `You Have ${chances} Chances`
-                if (isNaN(chances) == true) {
-                location.reload()
-            }
-                
-            } else {
-                document.getElementById('result').textContent = "Too low! Try again.";
-                chances = parseInt(chances) - 1
-                inda.innerText = `You Have ${chances} Chances`
-                if (isNaN(chances) == true) {
-                location.reload()
-            }
-            }
-            
-            document.getElementById('guessInput').value = '';
+        els.resultModal.classList.add('active');
+    }
+
+    function retryGame() {
+        startGame();
+    }
+    
+    function exitToMenu() {
+        goToMenu();
+    }
+
+    // --- Game Logic ---
+    function pressKey(num) {
+        if (state.isGameOver) return;
+        if (state.currentGuess.length >= 3) return;
+        state.currentGuess += num;
+        renderInput();
+    }
+
+    function pressBackspace() {
+        if (state.isGameOver) return;
+        state.currentGuess = state.currentGuess.slice(0, -1);
+        renderInput();
+    }
+
+    function renderInput() {
+        els.inputDisplay.innerText = state.currentGuess;
+    }
+
+    function triggerShake() {
+        els.inputDisplay.classList.remove('shake');
+        void els.inputDisplay.offsetWidth; // Reflow
+        els.inputDisplay.classList.add('shake');
+    }
+
+    function submitGuess() {
+        if (state.isGameOver) return;
+        
+        if (state.currentGuess === "") return;
+
+        const guess = parseInt(state.currentGuess);
+
+        // --- VALIDATION CHECK ---
+        if (guess > config.maxNum || guess < 1) {
+            els.hintText.innerText = `Invalid! Max is ${config.maxNum}`;
+            els.hintText.style.color = "var(--warning)";
+            state.currentGuess = "";
+            renderInput();
+            els.inputDisplay.classList.add('error-border');
+            setTimeout(() => els.inputDisplay.classList.remove('error-border'), 500);
+            triggerShake();
+            return;
         }
-    </script>
+
+        // Reset input logic for valid guess
+        state.currentGuess = "";
+        renderInput();
+
+        if (guess === state.target) {
+            handleWin();
+        } else {
+            handleIncorrect(guess);
+        }
+    }
+
+    function handleWin() {
+        state.isGameOver = true;
+        state.wins++;
+        els.winCount.innerText = state.wins;
+        
+        els.inputDisplay.innerText = state.target;
+        els.inputDisplay.classList.add('win');
+        els.hintText.innerText = "Correct!";
+        els.hintText.style.color = "var(--success)";
+        
+        showModal(true); // Show WIN popup
+    }
+
+    function handleIncorrect(guess) {
+        state.livesLeft--;
+        els.livesDisplay.innerText = state.livesLeft;
+        
+        els.inputDisplay.classList.add('error-border');
+        triggerShake();
+        setTimeout(() => els.inputDisplay.classList.remove('error-border'), 500);
+
+        if (state.livesLeft <= 0) {
+            // GAME OVER - LOSS
+            state.isGameOver = true;
+            state.losses++;
+            els.lossCount.innerText = state.losses;
+            
+            showModal(false); // Show LOSS popup
+        } else {
+            if (guess < state.target) {
+                els.hintText.innerText = "Too Small!";
+            } else {
+                els.hintText.innerText = "Too Big!";
+            }
+        }
+    }
+
+    // Keyboard support
+    window.addEventListener('keydown', (e) => {
+        if (!els.gameScreen.classList.contains('active')) return;
+        
+        // Prevent typing if modal is active
+        if (els.resultModal.classList.contains('active')) return;
+
+        if (e.key >= '0' && e.key <= '9') pressKey(e.key);
+        else if (e.key === 'Backspace') pressBackspace();
+        else if (e.key === 'Enter') submitGuess();
+    });
+
+</script>
 </body>
 </html>
